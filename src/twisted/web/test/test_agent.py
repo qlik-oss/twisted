@@ -8,7 +8,7 @@ Tests for L{twisted.web.client.Agent} and related new client APIs.
 import zlib
 
 from io import BytesIO
-
+from unittest import skipIf
 from zope.interface.verify import verifyObject
 
 from twisted.trial.unittest import TestCase, SynchronousTestCase
@@ -62,11 +62,11 @@ try:
     from twisted.internet import ssl
 except ImportError:
     ssl = None
-    skipWhenNoSSL = "SSL not present, cannot run SSL tests."
-    skipWhenSSLPresent = None
+    skipWhenNoSSL = True
+    skipWhenSSLPresent = False
 else:
-    skipWhenSSLPresent = "SSL present."
-    skipWhenNoSSL = None
+    skipWhenSSLPresent = True
+    skipWhenNoSSL = False
     from twisted.internet._sslverify import ClientTLSOptions, IOpenSSLTrustRoot
     from twisted.internet.ssl import optionsForClientTLS
     from twisted.protocols.tls import TLSMemoryBIOProtocol, TLSMemoryBIOFactory
@@ -1246,6 +1246,7 @@ class AgentTests(TestCase, FakeReactorAndConnectMixin, AgentTestsMixin,
         self.assertEqual(5, timeout)
 
 
+    @skipIf(skipWhenNoSSL, "SSL not present, cannot run SSL tests.")
     def test_connectTimeoutHTTPS(self):
         """
         L{Agent} takes a C{connectTimeout} argument which is forwarded to the
@@ -1255,8 +1256,6 @@ class AgentTests(TestCase, FakeReactorAndConnectMixin, AgentTestsMixin,
         agent.request(b'GET', b'https://foo/')
         timeout = self.reactor.tcpClients.pop()[3]
         self.assertEqual(5, timeout)
-
-    test_connectTimeoutHTTPS.skip = skipWhenNoSSL
 
 
     def test_bindAddress(self):
@@ -1270,6 +1269,7 @@ class AgentTests(TestCase, FakeReactorAndConnectMixin, AgentTestsMixin,
         self.assertEqual('192.168.0.1', address)
 
 
+    @skipIf(skipWhenNoSSL, "SSL not present, cannot run SSL tests.")
     def test_bindAddressSSL(self):
         """
         L{Agent} takes a C{bindAddress} argument which is forwarded to the
@@ -1279,8 +1279,6 @@ class AgentTests(TestCase, FakeReactorAndConnectMixin, AgentTestsMixin,
         agent.request(b'GET', b'https://foo/')
         address = self.reactor.tcpClients.pop()[4]
         self.assertEqual('192.168.0.1', address)
-
-    test_bindAddressSSL.skip = skipWhenNoSSL
 
 
     def test_responseIncludesRequest(self):
@@ -1420,7 +1418,8 @@ class AgentHTTPSTests(TestCase, FakeReactorAndConnectMixin,
     """
     Tests for the new HTTP client API that depends on SSL.
     """
-    skip = skipWhenNoSSL
+    if skipWhenNoSSL:
+        skip = "SSL not present, cannot run SSL tests."
 
     def makeEndpoint(self, host=b'example.com', port=443):
         """
@@ -1656,6 +1655,7 @@ class WebClientContextFactoryTests(TestCase):
         )
 
 
+    @skipIf(skipWhenSSLPresent, "SSL Present.")
     def test_missingSSL(self):
         """
         If C{getContext} is called and SSL is not available, raise
@@ -1668,6 +1668,7 @@ class WebClientContextFactoryTests(TestCase):
         )
 
 
+    @skipIf(skipWhenNoSSL, "SSL not present, cannot run SSL tests.")
     def test_returnsContext(self):
         """
         If SSL is present, C{getContext} returns a L{OpenSSL.SSL.Context}.
@@ -1676,6 +1677,7 @@ class WebClientContextFactoryTests(TestCase):
         self.assertIsInstance(ctx, ssl.SSL.Context)
 
 
+    @skipIf(skipWhenNoSSL, "SSL not present, cannot run SSL tests.")
     def test_setsTrustRootOnContextToDefaultTrustRoot(self):
         """
         The L{CertificateOptions} has C{trustRoot} set to the default trust
@@ -1685,11 +1687,6 @@ class WebClientContextFactoryTests(TestCase):
         certificateOptions = ctx._getCertificateOptions('example.com', 443)
         self.assertIsInstance(
             certificateOptions.trustRoot, ssl.OpenSSLDefaultPaths)
-
-    test_returnsContext.skip \
-        = test_setsTrustRootOnContextToDefaultTrustRoot.skip \
-        = skipWhenNoSSL
-    test_missingSSL.skip = skipWhenSSLPresent
 
 
 
@@ -3200,7 +3197,8 @@ class ReadBodyTests(TestCase):
 
 class HostnameCachingHTTPSPolicyTests(TestCase):
 
-    skip = skipWhenNoSSL
+    if skipWhenNoSSL:
+        skip = "SSL not present, cannot run SSL tests."
 
     def test_cacheIsUsed(self):
         """

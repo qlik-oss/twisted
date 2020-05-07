@@ -13,12 +13,16 @@ import shutil
 import sys
 import warnings
 
-try:
-    import pwd, grp
-except ImportError:
-    pwd = grp = None
+from unittest import skipIf
 
-from twisted.trial import unittest
+try:
+    import pwd
+    import grp
+except ImportError:
+    pwd = None
+    grp = None
+
+from twisted.trial.unittest import TestCase, FailTest
 from twisted.trial.util import suppress as SUPPRESS
 
 from twisted.python import util
@@ -34,11 +38,14 @@ from twisted.test.test_process import MockOS
 pyExe = FilePath(sys.executable)._asBytesPath()
 
 
-class UtilTests(unittest.TestCase):
+
+class UtilTests(TestCase):
 
     def testUniq(self):
-        l = ["a", 1, "ab", "a", 3, 4, 1, 2, 2, 4, 6]
-        self.assertEqual(util.uniquify(l), ["a", 1, "ab", 3, 4, 2, 6])
+        listWithDupes = ["a", 1, "ab", "a", 3, 4, 1, 2, 2, 4, 6]
+        self.assertEqual(util.uniquify(listWithDupes),
+                         ["a", 1, "ab", 3, 4, 2, 6])
+
 
     def testRaises(self):
         self.assertTrue(util.raises(ZeroDivisionError, divmod, 1, 0))
@@ -49,7 +56,7 @@ class UtilTests(unittest.TestCase):
         except ZeroDivisionError:
             pass
         else:
-            raise unittest.FailTest("util.raises didn't raise when it should have")
+            raise FailTest("util.raises didn't raise when it should have")
 
 
     def test_uidFromNumericString(self):
@@ -60,6 +67,7 @@ class UtilTests(unittest.TestCase):
         self.assertEqual(util.uidFromString("100"), 100)
 
 
+    @skipIf(pwd is None, "Username/UID conversion requires the pwd module.")
     def test_uidFromUsernameString(self):
         """
         When L{uidFromString} is called with a base-ten string representation
@@ -67,9 +75,6 @@ class UtilTests(unittest.TestCase):
         """
         pwent = pwd.getpwuid(os.getuid())
         self.assertEqual(util.uidFromString(pwent.pw_name), pwent.pw_uid)
-    if pwd is None:
-        test_uidFromUsernameString.skip = (
-            "Username/UID conversion requires the pwd module.")
 
 
     def test_gidFromNumericString(self):
@@ -80,6 +85,7 @@ class UtilTests(unittest.TestCase):
         self.assertEqual(util.gidFromString("100"), 100)
 
 
+    @skipIf(grp is None, "Group Name/GID conversion requires the grp module.")
     def test_gidFromGroupnameString(self):
         """
         When L{gidFromString} is called with a base-ten string representation
@@ -87,13 +93,10 @@ class UtilTests(unittest.TestCase):
         """
         grent = grp.getgrgid(os.getgid())
         self.assertEqual(util.gidFromString(grent.gr_name), grent.gr_gid)
-    if grp is None:
-        test_gidFromGroupnameString.skip = (
-            "Group Name/GID conversion requires the grp module.")
 
 
 
-class NameToLabelTests(unittest.TestCase):
+class NameToLabelTests(TestCase):
     """
     Tests for L{nameToLabel}.
     """
@@ -117,7 +120,7 @@ class NameToLabelTests(unittest.TestCase):
 
 
 
-class UntilConcludesTests(unittest.TestCase):
+class UntilConcludesTests(TestCase):
     """
     Tests for L{untilConcludes}, an C{EINTR} helper.
     """
@@ -147,7 +150,7 @@ class UntilConcludesTests(unittest.TestCase):
 
 
 
-class SwitchUIDTests(unittest.TestCase):
+class SwitchUIDTests(TestCase):
     """
     Tests for L{util.switchUID}.
     """
@@ -225,7 +228,7 @@ class SwitchUIDTests(unittest.TestCase):
 
 
 
-class MergeFunctionMetadataTests(unittest.TestCase):
+class MergeFunctionMetadataTests(TestCase):
     """
     Tests for L{mergeFunctionMetadata}.
     """
@@ -322,7 +325,7 @@ class MergeFunctionMetadataTests(unittest.TestCase):
 
 
 
-class OrderedDictTests(unittest.TestCase):
+class OrderedDictTests(TestCase):
     """
     Tests for L{util.OrderedDict}.
     """
@@ -344,7 +347,7 @@ class OrderedDictTests(unittest.TestCase):
 
 
 
-class InsensitiveDictTests(unittest.TestCase):
+class InsensitiveDictTests(TestCase):
     """
     Tests for L{util.InsensitiveDict}.
     """
@@ -431,7 +434,8 @@ class PasswordTestingProcessProtocol(ProcessProtocol):
         self.finished.callback((reason, self.output))
 
 
-class GetPasswordTests(unittest.TestCase):
+
+class GetPasswordTests(TestCase):
     if not IReactorProcess.providedBy(reactor):
         skip = "Process support required to test getPassword"
 
@@ -463,7 +467,7 @@ class GetPasswordTests(unittest.TestCase):
 
 
 
-class SearchUpwardsTests(unittest.TestCase):
+class SearchUpwardsTests(TestCase):
     def testSearchupwards(self):
         os.makedirs('searchupwards/a/b/c')
         open('searchupwards/foo.txt', 'w').close()
@@ -487,7 +491,7 @@ class SearchUpwardsTests(unittest.TestCase):
 
 
 
-class IntervalDifferentialTests(unittest.TestCase):
+class IntervalDifferentialTests(TestCase):
     def testDefault(self):
         d = iter(util.IntervalDifferential([], 10))
         for i in range(100):
@@ -622,7 +626,7 @@ class EqualToNothing(object):
 
 
 
-class EqualityTests(unittest.TestCase):
+class EqualityTests(TestCase):
     """
     Tests for L{FancyEqMixin}.
     """
@@ -727,7 +731,7 @@ class EqualityTests(unittest.TestCase):
 
 
 
-class RunAsEffectiveUserTests(unittest.TestCase):
+class RunAsEffectiveUserTests(TestCase):
     """
     Test for the L{util.runAsEffectiveUser} function.
     """
@@ -842,7 +846,7 @@ class RunAsEffectiveUserTests(unittest.TestCase):
 
 
 
-class InitGroupsTests(unittest.TestCase):
+class InitGroupsTests(TestCase):
     """
     Tests for L{util.initgroups}.
     """
@@ -876,7 +880,7 @@ class InitGroupsTests(unittest.TestCase):
 
 
 
-class DeprecationTests(unittest.TestCase):
+class DeprecationTests(TestCase):
     """
     Tests for deprecations in C{twisted.python.util}.
     """
@@ -915,7 +919,7 @@ class DeprecationTests(unittest.TestCase):
 
 
 
-class SuppressedWarningsTests(unittest.TestCase):
+class SuppressedWarningsTests(TestCase):
     """
     Tests for L{util.runWithWarningsSuppressed}.
     """
@@ -967,7 +971,7 @@ class SuppressedWarningsTests(unittest.TestCase):
 
 
 
-class FancyStrMixinTests(unittest.TestCase):
+class FancyStrMixinTests(TestCase):
     """
     Tests for L{util.FancyStrMixin}.
     """
@@ -1036,7 +1040,7 @@ class FancyStrMixinTests(unittest.TestCase):
 
 
 
-class PadToTests(unittest.TestCase):
+class PadToTests(TestCase):
     """
     Tests for L{util.padTo}.
     """

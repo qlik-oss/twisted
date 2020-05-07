@@ -20,6 +20,9 @@ class PollableWritePipeTests(TestCase):
     Tests for L{_pollingfile._PollableWritePipe}.
     """
 
+    if not _pollingfile:
+        skip = "Test will run only on Windows."
+
     def test_writeUnicode(self):
         """
         L{_pollingfile._PollableWritePipe.write} raises a C{TypeError} if an
@@ -38,9 +41,3 @@ class PollableWritePipeTests(TestCase):
         p = _pollingfile._PollableWritePipe(1, lambda: None)
         self.assertRaises(TypeError, p.writeSequence, [u"test"])
         self.assertRaises(TypeError, p.writeSequence, (u"test", ))
-
-
-
-
-if _pollingfile is None:
-    PollableWritePipeTests.skip = "Test will run only on Windows."

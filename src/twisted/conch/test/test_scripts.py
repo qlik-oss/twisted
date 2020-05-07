@@ -4,20 +4,24 @@
 """
 Tests for the command-line interfaces to conch.
 """
+from unittest import skipIf
 from twisted.python.reflect import requireModule
+from twisted.python.test.test_shellcomp import ZshScriptTestMixin
+from twisted.scripts.test.test_scripts import ScriptTestsMixin
+from twisted.trial.unittest import TestCase
 
 if requireModule('pyasn1'):
-    pyasn1Skip = None
+    pyasn1Skip = ""
 else:
-    pyasn1Skip =  "Cannot run without PyASN1"
+    pyasn1Skip = "Cannot run without PyASN1"
 
 if requireModule('cryptography'):
-    cryptoSkip = None
+    cryptoSkip = ""
 else:
     cryptoSkip = "can't run w/o cryptography"
 
 if requireModule('tty'):
-    ttySkip = None
+    ttySkip = ""
 else:
     ttySkip = "can't run w/o tty"
 
@@ -31,11 +35,7 @@ else:
     except Tkinter.TclError as e:
         tkskip = "Can't test Tkinter: " + str(e)
     else:
-        tkskip = None
-
-from twisted.trial.unittest import TestCase
-from twisted.scripts.test.test_scripts import ScriptTestsMixin
-from twisted.python.test.test_shellcomp import ZshScriptTestMixin
+        tkskip = ""
 
 
 
@@ -46,23 +46,23 @@ class ScriptTests(TestCase, ScriptTestsMixin):
     skip = pyasn1Skip or cryptoSkip
 
 
+    @skipIf(ttySkip or skip, ttySkip or skip)
     def test_conch(self):
         self.scriptTest("conch/conch")
-    test_conch.skip = ttySkip or skip
 
 
+    @skipIf(ttySkip or skip, ttySkip or skip)
     def test_cftp(self):
         self.scriptTest("conch/cftp")
-    test_cftp.skip = ttySkip or skip
 
 
     def test_ckeygen(self):
         self.scriptTest("conch/ckeygen")
 
 
+    @skipIf(ttySkip or skip, ttySkip or skip)
     def test_tkconch(self):
         self.scriptTest("conch/tkconch")
-    test_tkconch.skip = tkskip or skip
 
 
 

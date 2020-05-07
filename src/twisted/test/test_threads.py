@@ -11,18 +11,24 @@ import os
 import sys
 import time
 
-from twisted.trial import unittest
+from twisted.trial.unittest import TestCase
 
 from twisted.python.compat import range
-from twisted.internet import reactor, defer, interfaces, threads, protocol, error
+from twisted.internet import (reactor, defer, interfaces, threads, protocol,
+                              error)
 from twisted.python import failure, threadable, log, threadpool
 
+if interfaces.IReactorThreads(reactor, None):
+    import threading
 
 
-class ReactorThreadsTests(unittest.TestCase):
+
+class ReactorThreadsTests(TestCase):
     """
     Tests for the reactor threading API.
     """
+    if interfaces.IReactorThreads(reactor, None) is None:
+        skip = "No thread support, nothing to test here."
 
     def test_suggestThreadPoolSize(self):
         """
@@ -211,10 +217,12 @@ class Counter:
 
 
 
-class DeferredResultTests(unittest.TestCase):
+class DeferredResultTests(TestCase):
     """
     Test twisted.internet.threads.
     """
+    if interfaces.IReactorThreads(reactor, None) is None:
+        skip = "No thread support, nothing to test here."
 
     def setUp(self):
         reactor.suggestThreadPoolSize(8)
@@ -287,7 +295,7 @@ class DeferredResultTests(unittest.TestCase):
 
 
 
-class DeferToThreadPoolTests(unittest.TestCase):
+class DeferToThreadPoolTests(TestCase):
     """
     Test L{twisted.internet.threads.deferToThreadPool}.
     """
@@ -363,7 +371,7 @@ class ThreadStartupProcessProtocol(protocol.ProcessProtocol):
 
 
 
-class StartupBehaviorTests(unittest.TestCase):
+class StartupBehaviorTests(TestCase):
     """
     Test cases for the behavior of the reactor threadpool near startup
     boundary conditions.
@@ -376,7 +384,11 @@ class StartupBehaviorTests(unittest.TestCase):
     something it cannot do unless the threadpool has been properly
     torn down).
     """
+    if interfaces.IReactorThreads(reactor, None) is None:
+        skip = "No thread support, nothing to test here."
 
+    if interfaces.IReactorProcess(reactor, None) is None:
+        skip = "No process support, cannot run subprocess thread tests."
 
     def testCallBeforeStartupUnexecuted(self):
         progname = self.mktemp()
@@ -405,17 +417,3 @@ class StartupBehaviorTests(unittest.TestCase):
         proto = ThreadStartupProcessProtocol(d)
         reactor.spawnProcess(proto, sys.executable, ('python', progname), env)
         return d
-
-
-
-if interfaces.IReactorThreads(reactor, None) is None:
-    for cls in (ReactorThreadsTests,
-                DeferredResultTests,
-                StartupBehaviorTests):
-        cls.skip = "No thread support, nothing to test here."
-else:
-    import threading
-
-if interfaces.IReactorProcess(reactor, None) is None:
-    for cls in (StartupBehaviorTests,):
-        cls.skip = "No process support, cannot run subprocess thread tests."

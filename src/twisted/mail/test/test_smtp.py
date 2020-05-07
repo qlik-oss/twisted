@@ -691,6 +691,8 @@ class TLSTests(unittest.TestCase, LoopbackMixin):
     if sslSkip is not None:
         skip = sslSkip
 
+    if not interfaces.IReactorSSL.providedBy(reactor):
+        skip = "Reactor doesn't support SSL"
 
     def testTLS(self):
         clientCTX = ClientTLSContext()
@@ -704,10 +706,6 @@ class TLSTests(unittest.TestCase, LoopbackMixin):
             self.assertEqual(server.startedTLS, True)
 
         return self.loopback(server, client).addCallback(check)
-
-if not interfaces.IReactorSSL.providedBy(reactor):
-    for case in (TLSTests,):
-        case.skip = "Reactor doesn't support SSL"
 
 
 

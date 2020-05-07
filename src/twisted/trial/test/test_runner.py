@@ -8,6 +8,7 @@
 import os
 import pdb
 import sys
+import unittest as pyunit
 
 from zope.interface import implementer
 from zope.interface.verify import verifyObject
@@ -24,8 +25,6 @@ from twisted.plugins import twisted_trial
 from twisted import plugin
 from twisted.internet import defer
 
-
-pyunit = __import__('unittest')
 
 
 class CapturingDebugger(object):

@@ -9,6 +9,14 @@ Tests for L{twisted.conch.client.default}.
 import sys
 
 from twisted.python.reflect import requireModule
+from unittest import skipIf
+from twisted.trial.unittest import TestCase
+from twisted.python.filepath import FilePath
+from twisted.conch.error import ConchError
+from twisted.conch.test import keydata
+from twisted.test.proto_helpers import StringTransport
+from twisted.python.compat import nativeString
+from twisted.python.runtime import platform
 
 if requireModule('cryptography') and requireModule('pyasn1'):
     from twisted.conch.client.agent import SSHAgentClient
@@ -20,14 +28,6 @@ if requireModule('cryptography') and requireModule('pyasn1'):
 else:
     skip = "cryptography and PyASN1 required for twisted.conch.client.default."
 
-from twisted.trial.unittest import TestCase
-from twisted.python.filepath import FilePath
-from twisted.conch.error import ConchError
-from twisted.conch.test import keydata
-from twisted.test.proto_helpers import StringTransport
-from twisted.python.compat import nativeString
-from twisted.python.runtime import platform
-
 if platform.isWindows():
     windowsSkip = (
         "genericAnswers and getPassword does not work on Windows."
@@ -35,7 +35,7 @@ if platform.isWindows():
 else:
     windowsSkip = skip
 
-ttySkip = None
+ttySkip = ""
 if not sys.stdin.isatty():
     ttySkip = "sys.stdin is not an interactive tty"
 if not sys.stdout.isatty():
@@ -192,6 +192,7 @@ class SSHUserAuthClientTests(TestCase):
         return client.getPrivateKey().addCallback(_cbGetPrivateKey)
 
 
+    @skipIf(windowsSkip or ttySkip, windowsSkip or ttySkip)
     def test_getPassword(self):
         """
         Get the password using
@@ -217,9 +218,8 @@ class SSHUserAuthClientTests(TestCase):
         d.addCallback(self.assertEqual, b'bad password')
         return d
 
-    test_getPassword.skip = windowsSkip or ttySkip
 
-
+    @skipIf(windowsSkip or ttySkip, windowsSkip or ttySkip)
     def test_getPasswordPrompt(self):
         """
         Get the password using
@@ -239,9 +239,8 @@ class SSHUserAuthClientTests(TestCase):
         d.addCallback(self.assertEqual, b'bad password')
         return d
 
-    test_getPasswordPrompt.skip = windowsSkip or ttySkip
 
-
+    @skipIf(windowsSkip or ttySkip, windowsSkip or ttySkip)
     def test_getPasswordConchError(self):
         """
         Get the password using
@@ -264,9 +263,8 @@ class SSHUserAuthClientTests(TestCase):
             return fail
         self.assertFailure(d, ConchError)
 
-    test_getPasswordConchError.skip = windowsSkip or ttySkip
 
-
+    @skipIf(windowsSkip or ttySkip, windowsSkip or ttySkip)
     def test_getGenericAnswers(self):
         """
         L{twisted.conch.client.default.SSHUserAuthClient.getGenericAnswers}
@@ -291,8 +289,6 @@ class SSHUserAuthClientTests(TestCase):
         d.addCallback(
             self.assertListEqual, ["getpass", "raw_input"])
         return d
-
-    test_getGenericAnswers.skip = windowsSkip or ttySkip
 
 
 

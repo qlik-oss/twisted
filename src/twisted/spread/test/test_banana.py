@@ -5,8 +5,9 @@
 import sys
 from functools import partial
 from io import BytesIO
+from unittest import skipIf
 
-from twisted.trial import unittest
+from twisted.trial.unittest import TestCase
 from twisted.spread import banana
 from twisted.python import failure
 from twisted.python.compat import long, iterbytes, _bytesChr as chr, _PY3
@@ -19,10 +20,11 @@ else:
     from sys import maxint as _maxint
 
 
-class MathTests(unittest.TestCase):
+
+class MathTests(TestCase):
     def test_int2b128(self):
-        funkylist = (list(range(0,100)) + list(range(1000,1100)) +
-                    list(range(1000000,1000100)) + [1024 **10])
+        funkylist = (list(range(0, 100)) + list(range(1000, 1100)) +
+                     list(range(1000000, 1000100)) + [1024 ** 10])
         for i in funkylist:
             x = BytesIO()
             banana.int2b128(i, x.write)
@@ -71,7 +73,7 @@ def encode(bananaFactory, obj):
 
 
 
-class BananaTestBase(unittest.TestCase):
+class BananaTestBase(TestCase):
     """
     The base for test classes. It defines commonly used things and sets up a
     connection for testing.
@@ -177,6 +179,8 @@ class BananaTests(BananaTestBase):
             self.assertIsInstance(self.result, int)
 
 
+    @skipIf(_PY3, "Python 3 has unified int/long into an int type of "
+                  "unlimited size")
     def test_largeLong(self):
         """
         Integers greater than 2 ** 32 and less than -2 ** 32 should
@@ -194,10 +198,6 @@ class BananaTests(BananaTestBase):
                         self.assertIsInstance(self.result, long)
                     else:
                         self.assertIsInstance(self.result, int)
-
-    if _PY3:
-        test_largeLong.skip = (
-            "Python 3 has unified int/long into an int type of unlimited size")
 
 
     def _getSmallest(self):
@@ -438,7 +438,7 @@ class DialectTests(BananaTestBase):
 
 
 
-class GlobalCoderTests(unittest.TestCase):
+class GlobalCoderTests(TestCase):
     """
     Tests for the free functions L{banana.encode} and L{banana.decode}.
     """

@@ -16,6 +16,7 @@ import os
 import socket
 
 from functools import wraps
+from unittest import skipIf
 
 import attr
 
@@ -77,9 +78,11 @@ try:
     s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     s.bind(('::1', 0))
 except socket.error as e:
-    ipv6Skip = str(e)
+    ipv6Skip = True
+    ipv6SkipReason = str(e)
 else:
-    ipv6Skip = None
+    ipv6Skip = False
+    ipv6SkipReason = ""
 if s is not None:
     s.close()
 
@@ -388,6 +391,7 @@ class TCPConnectionTests(TestCase):
         self.assertFalse(conn.TLS)
 
 
+    @skipIf(not useSSL, "No SSL support available")
     def test_tlsAfterStartTLS(self):
         """
         The C{TLS} attribute of a L{Connection} instance is C{True} after
@@ -399,8 +403,6 @@ class TCPConnectionTests(TestCase):
         conn._tlsClientDefault = True
         conn.startTLS(ClientContextFactory(), True)
         self.assertTrue(conn.TLS)
-    if not useSSL:
-        test_tlsAfterStartTLS.skip = "No SSL support available"
 
 
 
@@ -1422,6 +1424,7 @@ class StreamTransportTestsMixin(LogObserverMixin):
         self.assertFullyNewStyle(port)
 
 
+    @skipIf(SKIP_EMFILE, SKIP_EMFILE)
     def test_closePeerOnEMFILE(self):
         """
         See L{assertPeerClosedOnEMFILE}.
@@ -1434,9 +1437,6 @@ class StreamTransportTestsMixin(LogObserverMixin):
             listen=self.getListeningPort,
             connect=self.connectToListener,
         )
-
-    if SKIP_EMFILE:
-        test_closePeerOnEMFILE.skip = SKIP_EMFILE
 
 
 
@@ -1554,6 +1554,7 @@ class TCPPortTestsMixin(object):
         self.assertIsInstance(address, IPv4Address)
 
 
+    @skipIf(ipv6Skip, ipv6SkipReason)
     def test_portGetHostOnIPv6(self):
         """
         When listening on an IPv6 address, L{IListeningPort.getHost} returns
@@ -1569,14 +1570,13 @@ class TCPPortTestsMixin(object):
         self.assertIsInstance(address, IPv6Address)
         self.assertEqual('::1', address.host)
         self.assertEqual(portNumber, address.port)
-    if ipv6Skip:
-        test_portGetHostOnIPv6.skip = ipv6Skip
 
 
+    @skipIf(ipv6Skip, ipv6SkipReason)
     def test_portGetHostOnIPv6ScopeID(self):
         """
-        When a link-local IPv6 address including a scope identifier is passed as
-        the C{interface} argument to L{IReactorTCP.listenTCP}, the resulting
+        When a link-local IPv6 address including a scope identifier is passed
+        as the C{interface} argument to L{IReactorTCP.listenTCP}, the resulting
         L{IListeningPort} reports its address as an L{IPv6Address} with a host
         value that includes the scope identifier.
         """
@@ -1586,8 +1586,6 @@ class TCPPortTestsMixin(object):
         address = port.getHost()
         self.assertIsInstance(address, IPv6Address)
         self.assertEqual(linkLocal, address.host)
-    if ipv6Skip:
-        test_portGetHostOnIPv6ScopeID.skip = ipv6Skip
 
 
     def _buildProtocolAddressTest(self, client, interface):
@@ -1640,6 +1638,7 @@ class TCPPortTestsMixin(object):
             IPv4Address('TCP', *client.getsockname()), observedAddress)
 
 
+    @skipIf(ipv6Skip, ipv6SkipReason)
     def test_buildProtocolIPv6Address(self):
         """
         When a connection is accepted to an IPv6 address, an L{IPv6Address} is
@@ -1655,10 +1654,9 @@ class TCPPortTestsMixin(object):
 
         self.assertEqual(
             IPv6Address('TCP', hostname, peer[1]), observedAddress)
-    if ipv6Skip:
-        test_buildProtocolIPv6Address.skip = ipv6Skip
 
 
+    @skipIf(ipv6Skip, ipv6SkipReason)
     def test_buildProtocolIPv6AddressScopeID(self):
         """
         When a connection is accepted to a link-local IPv6 address, an
@@ -1674,8 +1672,6 @@ class TCPPortTestsMixin(object):
 
         self.assertEqual(
             IPv6Address('TCP', hostname, *peer[1:]), observedAddress)
-    if ipv6Skip:
-        test_buildProtocolIPv6AddressScopeID.skip = ipv6Skip
 
 
     def _serverGetConnectionAddressTest(self, client, interface, which):
@@ -1730,6 +1726,7 @@ class TCPPortTestsMixin(object):
             IPv4Address('TCP', *client.getpeername()), hostAddress)
 
 
+    @skipIf(ipv6Skip, ipv6SkipReason)
     def test_serverGetHostOnIPv6(self):
         """
         When a connection is accepted over IPv6, the server
@@ -1746,10 +1743,9 @@ class TCPPortTestsMixin(object):
 
         self.assertEqual(
             IPv6Address('TCP', hostname, *peer[1:]), hostAddress)
-    if ipv6Skip:
-        test_serverGetHostOnIPv6.skip = ipv6Skip
 
 
+    @skipIf(ipv6Skip, ipv6SkipReason)
     def test_serverGetHostOnIPv6ScopeID(self):
         """
         When a connection is accepted over IPv6, the server
@@ -1767,8 +1763,6 @@ class TCPPortTestsMixin(object):
 
         self.assertEqual(
             IPv6Address('TCP', hostname, *peer[1:]), hostAddress)
-    if ipv6Skip:
-        test_serverGetHostOnIPv6ScopeID.skip = ipv6Skip
 
 
     def test_serverGetPeerOnIPv4(self):
@@ -1785,6 +1779,7 @@ class TCPPortTestsMixin(object):
             IPv4Address('TCP', *client.getsockname()), peerAddress)
 
 
+    @skipIf(ipv6Skip, ipv6SkipReason)
     def test_serverGetPeerOnIPv6(self):
         """
         When a connection is accepted over IPv6, the server
@@ -1801,10 +1796,9 @@ class TCPPortTestsMixin(object):
 
         self.assertEqual(
             IPv6Address('TCP', hostname, *peer[1:]), peerAddress)
-    if ipv6Skip:
-        test_serverGetPeerOnIPv6.skip = ipv6Skip
 
 
+    @skipIf(ipv6Skip, ipv6SkipReason)
     def test_serverGetPeerOnIPv6ScopeID(self):
         """
         When a connection is accepted over IPv6, the server
@@ -1822,8 +1816,6 @@ class TCPPortTestsMixin(object):
 
         self.assertEqual(
             IPv6Address('TCP', hostname, *peer[1:]), peerAddress)
-    if ipv6Skip:
-        test_serverGetPeerOnIPv6ScopeID.skip = ipv6Skip
 
 
 
@@ -2346,6 +2338,7 @@ class TCPTransportServerAddressTestMixin(object):
                                        IPv4Address)
 
 
+    @skipIf(ipv6Skip, ipv6SkipReason)
     def test_serverAddressTCP6(self):
         """
         IPv6 L{Server} instances have a string representation indicating on
@@ -2354,9 +2347,6 @@ class TCPTransportServerAddressTestMixin(object):
         """
         return self._testServerAddress(getLinkLocalIPv6Address(),
                                        socket.AF_INET6, IPv6Address)
-
-    if ipv6Skip:
-        test_serverAddressTCP6.skip = ipv6Skip
 
 
 
@@ -3015,7 +3005,7 @@ class SimpleUtilityTests(TestCase):
     Simple, direct tests for helpers within L{twisted.internet.tcp}.
     """
     if ipv6Skip:
-        skip = ipv6Skip
+        skip = ipv6SkipReason
 
     def test_resolveNumericHost(self):
         """

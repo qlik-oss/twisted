@@ -7,10 +7,17 @@ Tests for L{twisted.conch.scripts.cftp}.
 """
 
 import locale
-import time, sys, os, operator, getpass, struct
+import getpass
+import operator
+import os
+import struct
+import sys
+import time
+from unittest import skipIf
 from io import BytesIO
 
 from twisted.python.filepath import FilePath
+from twisted.python.procutils import which
 from twisted.python.reflect import requireModule
 from zope.interface import implementer
 
@@ -51,6 +58,11 @@ class SSHSessionTests(TestCase):
     """
     Tests for L{twisted.conch.scripts.cftp.SSHSession}.
     """
+
+    if None in (unix, cryptography, pyasn1,
+                interfaces.IReactorProcess(reactor, None)):
+        skip = "don't run w/o spawnProcess or cryptography or pyasn1"
+
     def test_eofReceived(self):
         """
         L{twisted.conch.scripts.cftp.SSHSession.eofReceived} loses the write
@@ -164,6 +176,21 @@ class ListingTests(TestCase):
             '!---------    0 0        0               0 Aug 29 09:33 foo')
 
 
+    # If alternate locale is not available, the next test will be
+    # skipped, please install this locale for it to run
+    currentLocale = locale.getlocale()
+    try:
+        try:
+            locale.setlocale(locale.LC_ALL, "es_AR.UTF-8")
+        except locale.Error:
+            localeSkip = True
+        else:
+            localeSkip = False
+    finally:
+        locale.setlocale(locale.LC_ALL, currentLocale)
+
+
+    @skipIf(localeSkip, "The es_AR.UTF-8 locale is not installed.")
     def test_localeIndependent(self):
         """
         The month name in the date is locale independent.
@@ -174,7 +201,7 @@ class ListingTests(TestCase):
 
         # Fake that we're in a language where August is not Aug (e.g.: Spanish)
         currentLocale = locale.getlocale()
-        locale.setlocale(locale.LC_ALL, "es_AR.UTF8")
+        locale.setlocale(locale.LC_ALL, "es_AR.UTF-8")
         self.addCleanup(locale.setlocale, locale.LC_ALL, currentLocale)
 
         self.assertEqual(
@@ -183,17 +210,6 @@ class ListingTests(TestCase):
         self.assertEqual(
             self._lsInTimezone('Pacific/Auckland', stat),
             '!---------    0 0        0               0 Aug 29 09:33 foo')
-
-    # If alternate locale is not available, the previous test will be
-    # skipped, please install this locale for it to run
-    currentLocale = locale.getlocale()
-    try:
-        try:
-            locale.setlocale(locale.LC_ALL, "es_AR.UTF8")
-        except locale.Error:
-            test_localeIndependent.skip = "The es_AR.UTF8 locale is not installed."
-    finally:
-        locale.setlocale(locale.LC_ALL, currentLocale)
 
 
     def test_newSingleDigitDayOfMonth(self):
@@ -350,6 +366,10 @@ class StdioClientTests(TestCase):
     """
     Tests for L{cftp.StdioClient}.
     """
+    if None in (unix, cryptography, pyasn1,
+                interfaces.IReactorProcess(reactor, None)):
+        skip = "don't run w/o spawnProcess or cryptography or pyasn1"
+
     def setUp(self):
         """
         Create a L{cftp.StdioClient} hooked up to dummy transport and a fake
@@ -953,6 +973,9 @@ class OurServerCmdLineClientTests(CFTPClientTestBase):
     Due to the spawned process you can not add a debugger breakpoint for the
     client code.
     """
+    if None in (unix, cryptography, pyasn1,
+                interfaces.IReactorProcess(reactor, None)):
+        skip = "don't run w/o spawnProcess or cryptography or pyasn1"
 
     def setUp(self):
         CFTPClientTestBase.setUp(self)
@@ -1325,6 +1348,9 @@ class OurServerBatchFileTests(CFTPClientTestBase):
     Functional tests which launch a SFTP server over localhost and checks csftp
     in batch interface.
     """
+    if None in (unix, cryptography, pyasn1,
+                interfaces.IReactorProcess(reactor, None)):
+        skip = "don't run w/o spawnProcess or cryptography or pyasn1"
 
     def setUp(self):
         CFTPClientTestBase.setUp(self)
@@ -1428,6 +1454,12 @@ class OurServerSftpClientTests(CFTPClientTestBase):
     """
     Test the sftp server against sftp command line client.
     """
+    if None in (unix, cryptography, pyasn1,
+                interfaces.IReactorProcess(reactor, None)):
+        skip = "don't run w/o spawnProcess or cryptography or pyasn1"
+
+    if not which('sftp'):
+        skip = "no sftp command-line client available"
 
     def setUp(self):
         CFTPClientTestBase.setUp(self)
@@ -1489,19 +1521,3 @@ class OurServerSftpClientTests(CFTPClientTestBase):
         d.addCallback(hasPAKT)
         d.addCallback(lambda args: getProcessOutputAndValue('sftp', args))
         return d.addCallback(check)
-
-
-
-if None in (unix, cryptography, pyasn1,
-            interfaces.IReactorProcess(reactor, None)):
-    if _reason is None:
-        _reason = "don't run w/o spawnProcess or cryptography or pyasn1"
-    OurServerCmdLineClientTests.skip = _reason
-    OurServerBatchFileTests.skip = _reason
-    OurServerSftpClientTests.skip = _reason
-    StdioClientTests.skip = _reason
-    SSHSessionTests.skip = _reason
-else:
-    from twisted.python.procutils import which
-    if not which('sftp'):
-        OurServerSftpClientTests.skip = "no sftp command-line client available"
