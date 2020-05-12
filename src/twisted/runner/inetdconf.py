@@ -46,7 +46,7 @@ class SimpleConfFile:
     """
 
     commentChar = '#'
-    defaultFilename = None
+    defaultFilename = None  # type: str
 
     def parseFile(self, file=None):
         """

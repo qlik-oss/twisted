@@ -291,8 +291,7 @@ class ConnectionTestsMixin(object):
     implementations.
     """
 
-    # This should be a reactormixins.EndpointCreator instance.
-    endpoints = None
+    endpoints = None  # type: EndpointCreator
 
 
     def test_logPrefix(self):
