@@ -1329,7 +1329,7 @@ def _parseUNIX(factory, address, mode='666', backlog=50, lockfile=True):
 
 
 
-def _parseSSL(factory, port, privateKey="server.pem", certKey=None,
+def _parseSSL(factory, port, privateKey="server.pem", certKey=None, rootCrtPath=None,
               sslmethod=None, interface='', backlog=50, extraCertChain=None,
               dhParameters=None):
     """
@@ -1355,6 +1355,9 @@ def _parseSSL(factory, port, privateKey="server.pem", certKey=None,
     @param certKey: The file name of a PEM format certificate file.
     @type certKey: C{str}
 
+    @param rootCrtPath: The file name of a PEM format root certificate file.
+    @type certKey: C{str}
+
     @param sslmethod: The string name of an SSL method, based on the name of a
         constant in C{OpenSSL.SSL}.  Must be one of: "SSLv23_METHOD",
         "SSLv2_METHOD", "SSLv3_METHOD", "TLSv1_METHOD".
@@ -1375,6 +1378,8 @@ def _parseSSL(factory, port, privateKey="server.pem", certKey=None,
         to L{SSL4ServerEndpoint}.
     """
     from twisted.internet import ssl
+    from OpenSSL import crypto
+    from twisted.internet._sslverify import OpenSSLCertificateAuthorities
     if certKey is None:
         certKey = privateKey
     kw = {}
@@ -1384,6 +1389,10 @@ def _parseSSL(factory, port, privateKey="server.pem", certKey=None,
     keyPEM = FilePath(privateKey).getContent()
     privateCertificate = ssl.PrivateCertificate.loadPEM(
         certPEM + b'\n' + keyPEM)
+    trustCertRoot = None
+    if rootCrtPath is not None:
+        caPEM = FilePath(rootCrtPath).getContent()
+        trustCertRoot = OpenSSLCertificateAuthorities([crypto.load_certificate(crypto.FILETYPE_PEM, caPEM)])
     if extraCertChain is not None:
         matches = re.findall(
             r'(-----BEGIN CERTIFICATE-----\n.+?\n-----END CERTIFICATE-----)',
@@ -1409,6 +1418,7 @@ def _parseSSL(factory, port, privateKey="server.pem", certKey=None,
         certificate=privateCertificate.original,
         extraCertChain=chainCertificates,
         dhParameters=dhParameters,
+        trustRoot=trustCertRoot,
         **kw
     )
     return ((int(port), factory, cf),
